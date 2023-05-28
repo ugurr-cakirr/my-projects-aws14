@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  Kittens adi altında bir web sitesi calisacak. Apache web server ile calisacak.
+Resources:
+  
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Http and SSH ports are opened.
+      SecurityGroupIngress: 
+       - IpProtocol: tcp
+         FromPort: 80
+         ToPort: 80
+         CidrIp: 0.0.0.0/0
+       - IpProtocol: tcp
+         FromPort: 22
+         ToPort: 22
+         CidrIp: 0.0.0.0/0
+
+
+  UgurWebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0bef6cc322bfff646
+      InstanceType: t2.micro
+      KeyName: second-key-pair
+      SecurityGroupIds: 
+      - !Ref WebServerSecurityGroup
+      Tags: 
+      - Key: Name
+        Value: !Sub WebServerSystem of ${AWS::StackName}
+      UserData:
+       Fn::Base64:
+        !Sub |
+        #! /bin/bash
+        yum update -y
+        yum install httpd -y
+        FOLDER="https://raw.githubusercontent.com/ugurr-cakirr/my-projects-aws14/main/101-kittens-carousel-static-website-ec2/static-web"
+        cd /var/www/html
+        wget $FOLDER/index.html
+        wget $FOLDER/cat0.jpg
+        wget $FOLDER/cat1.jpg
+        wget $FOLDER/cat2.jpg
+        systemctl start httpd
+        systemctl enable httpd
+
+  
+Outputs:
+  WebSiteURL:
+    Value: !Sub 
+    - http://${PublicAddress}
+    - PublicAddress: !GetAtt UgurWebServer.PublicDnsName
